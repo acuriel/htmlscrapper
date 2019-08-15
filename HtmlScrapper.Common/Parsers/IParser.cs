@@ -4,7 +4,7 @@ using System.Text;
 
 namespace HtmlScrapper.Common.Parsers
 {
-    public interface IParser<T> where T:Document<T>
+    public interface IParser<T>
     {
         T Parse(string content);
     }

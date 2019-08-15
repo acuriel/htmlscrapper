@@ -9,37 +9,46 @@ namespace HtmlScrapper.Common
 {
     public class Document<T> where T:Document<T>
     {
-        public TagNode RootNode { get; set; }
+        protected Document(string content, IParser<TagNode> parser)
+        {
+            Content = content;
+            Parser = parser;
+            RootNode = parser.Parse(content);
+        }
+        public TagNode RootNode { get; }
+        public string Content { get; }
+        public IParser<TagNode> Parser { get; }
 
-        public static Scrapper<T> LoadFromText(string content, IParser<T> parser) 
-            => new Scrapper<T>(content, parser);
+        public virtual TagNode Scrap => RootNode;
 
-        public static Scrapper<T> LoadFromPath(string path, IParser<T> parser)
+        public static Document<T> LoadFromText(string content, IParser<TagNode> parser)
+            => new Document<T>(content, parser);
+
+        public static Document<T> LoadFromPath(string path, IParser<TagNode> parser)
             => LoadFromStream(new FileStream(path, FileMode.Open), parser);
 
-        public static Scrapper<T> LoadFromStream(Stream stream, IParser<T> parser, Encoding encoding = null)
+        public static Document<T> LoadFromStream(Stream stream, IParser<TagNode> parser, Encoding encoding = null)
         {
             encoding = encoding ?? Encoding.UTF8;
-            Scrapper<T> result;
+            string content;
             using (StreamReader reader = new StreamReader(stream, encoding))
             {
-                string content = reader.ReadToEnd();
-                result = new Scrapper<T>(content, parser);
+                content = reader.ReadToEnd();
             }
-            return result;
+            return new Document<T>(content, parser);
+
         }
-        public static async Task<Scrapper<T>> LoadFromStreamAsync(Stream stream, IParser<T> parser, Encoding encoding = null)
+        public static async Task<Document<T>> LoadFromStreamAsync(Stream stream, IParser<TagNode> parser, Encoding encoding = null)
         {
             encoding = encoding ?? Encoding.UTF8;
-            Scrapper<T> result;
+            string content;
             using (StreamReader reader = new StreamReader(stream, encoding))
             {
-                string content = await reader.ReadToEndAsync();
-                result = new Scrapper<T>(content, parser);
+                content = await reader.ReadToEndAsync();
             }
-            return result;
+            return new Document<T>(content, parser);
         }
-        public static Scrapper<T> LoadFromUrl(string url, IParser<T> parser)
+        public static Document<T> LoadFromUrl(string url, IParser<TagNode> parser)
         {
             throw new NotImplementedException();
         }
@@ -47,18 +56,23 @@ namespace HtmlScrapper.Common
 
     public class HtmlDocument : Document<HtmlDocument>
     {
-        public string DocType { get; set; }
+        protected HtmlDocument(string content, IParser<TagNode> parser, string docType)
+            :base(content, parser)
+        {
+            DocType = docType;
+        }
+        public string DocType { get; }
 
-        public static Scrapper<HtmlDocument> LoadFromText(string content) 
+        public static Document<HtmlDocument> LoadFromText(string content) 
             => LoadFromText(content, HtmlParser.GetInstance());
 
-        public static Scrapper<HtmlDocument> LoadFromPath(string path)
+        public static Document<HtmlDocument> LoadFromPath(string path)
             => LoadFromPath(path, HtmlParser.GetInstance());
-        public static Scrapper<HtmlDocument> LoadFromStream(Stream stream, Encoding encoding = null) 
+        public static Document<HtmlDocument> LoadFromStream(Stream stream, Encoding encoding = null) 
             => LoadFromStream(stream, HtmlParser.GetInstance(), encoding);
-        public static async Task<Scrapper<HtmlDocument>> LoadFromStreamAsync(Stream stream, Encoding encoding = null)
+        public static async Task<Document<HtmlDocument>> LoadFromStreamAsync(Stream stream, Encoding encoding = null)
             => await LoadFromStreamAsync(stream, HtmlParser.GetInstance(), encoding);
-        public static Scrapper<HtmlDocument> LoadFromUrl(string url)
+        public static Document<HtmlDocument> LoadFromUrl(string url)
             => LoadFromUrl(url, HtmlParser.GetInstance());
     }
 }

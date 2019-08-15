@@ -5,7 +5,7 @@ using System.Text;
 
 namespace HtmlScrapper.Common.Parsers
 {
-    public class HtmlParser : IParser<HtmlDocument>
+    public class HtmlParser : IParser<TagNode>
     {
         private static HtmlParser instance = new HtmlParser();
         public static HtmlParser GetInstance() => instance;
@@ -33,13 +33,13 @@ namespace HtmlScrapper.Common.Parsers
         private int pos;
         private string content;
         Stack<TagNode> stack;
-        HtmlDocument document;
-        public HtmlDocument Parse(string text)
+        TagNode rootNode;
+        public TagNode Parse(string text)
         {
             pos = 0;
             content = text;
             stack = new Stack<TagNode>();
-            document = new HtmlDocument();
+            string docType;
 
             while (pos < content.Length) //execute until end of content
             {
@@ -52,7 +52,7 @@ namespace HtmlScrapper.Common.Parsers
                         if (content[pos + 2] == '-')
                             JumpComment();
                         else
-                            SetDocType();
+                             docType = GetDocType();
                     }
                     else
                         ParseTag();
@@ -61,15 +61,16 @@ namespace HtmlScrapper.Common.Parsers
                     AddText();
             }
 
-            return document;
+            return rootNode;
         }
 
-        private void SetDocType()
+        private string GetDocType()
         {
             GetWhile(c => c != ATTR_SEP_SYMBOL);
             pos++;
-            document.DocType = GetWhile(c => c != TAG_END_SYMBOL);
+            string docType = GetWhile(c => c != TAG_END_SYMBOL);
             pos++;
+            return docType;
         }
 
         private void AddText()
@@ -127,8 +128,7 @@ namespace HtmlScrapper.Common.Parsers
 
             //set the html tag as Root Tag
             if (tag.Parent == null && name == "html")
-                document.RootNode = tag;
-            //set the top tag in the stack as parent, or null if it's the html tag
+                rootNode = tag;
 
             //add as child of parent
             if (tag.Parent != null)

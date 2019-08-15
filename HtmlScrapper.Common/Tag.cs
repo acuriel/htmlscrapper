@@ -55,6 +55,29 @@ namespace HtmlScrapper.Common
         }
 
         public override string ToString() => Name;
+
+        public TagNode GetTag(string tag) 
+            => SearchTags(
+                Wide, 
+                t => t.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase)
+                ).First();
+
+        private static IEnumerable<TagNode> Wide(TagNode arg)
+        {
+            Queue<TagNode> queue = new Queue<TagNode>();
+            queue.Enqueue(arg);
+            while (queue.Any())
+            {
+                var current = queue.Dequeue();
+                current.Children.ForEach(t => queue.Enqueue(t));
+                yield return current;
+            }
+        }
+
+        public IEnumerable<TagNode> SearchTags
+            (Func<TagNode, IEnumerable<TagNode>> iter, Func<TagNode, bool> filter)
+            => iter(this).Skip(1).Where(filter);
+
     }
 
     public class TextNode : TagNode
