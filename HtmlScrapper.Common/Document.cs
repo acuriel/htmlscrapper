@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,13 +14,13 @@ namespace HtmlScrapper.Common
         {
             Content = content;
             Parser = parser;
-            RootNode = parser.Parse(content);
+            RootTag = parser.Parse(content);
         }
-        public TagNode RootNode { get; }
+        public TagNode RootTag { get; }
         public string Content { get; }
         public IParser<TagNode> Parser { get; }
 
-        public virtual TagNode Scrap => RootNode;
+        public virtual TagNode Scrap => RootTag;
 
         public static Document<T> LoadFromText(string content, IParser<TagNode> parser)
             => new Document<T>(content, parser);
@@ -50,7 +51,23 @@ namespace HtmlScrapper.Common
         }
         public static Document<T> LoadFromUrl(string url, IParser<TagNode> parser)
         {
-            throw new NotImplementedException();
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw new InvalidOperationException("Wrong URL or not connection to Internet");
+
+            Stream receiveStream = response.GetResponseStream();
+            StreamReader readStream =
+                response.CharacterSet == null
+                ? new StreamReader(receiveStream)
+                : new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
+
+            string content = readStream.ReadToEnd();
+
+            response.Close();
+            readStream.Close();
+
+            return new Document<T>(content, parser);
         }
     }
 
