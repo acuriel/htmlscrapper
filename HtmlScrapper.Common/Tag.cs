@@ -25,6 +25,13 @@ namespace HtmlScrapper.Common
             => Parent != null ? 
             Parent.Children.Where((t) => t != this) : 
             new List<TagNode>();
+
+        public TagNode NextSibling => NextFullSiblings.First();
+        public TagNode PrevSibling => PrevFullSiblings.First();
+        public IEnumerable<TagNode> NextFullSiblings => Siblings.SkipWhile(t => !t.Equals(this)).Skip(1);
+        public IEnumerable<TagNode> PrevFullSiblings => Siblings.Reverse().SkipWhile(t => !t.Equals(this)).Skip(1);
+
+
         public virtual string Text
         {
             get
@@ -43,15 +50,20 @@ namespace HtmlScrapper.Common
             }
         }
 
-        public string GetFullText()
+        public string GetFullText
         {
-            if (fullText == null)
+            get
             {
-                StringBuilder textBuilder = new StringBuilder(Text);
-                Children.ForEach(t => textBuilder.AppendLine(t.Text));
-                fullText = textBuilder.ToString();
+                if (fullText == null)
+                {
+                    StringBuilder textBuilder = new StringBuilder(Text);
+                    foreach (var item in TopDown(this))
+                        if (item.Text.Length > 0)
+                            textBuilder.AppendLine(item.Text);
+                    fullText = textBuilder.ToString();
+                }
+                return fullText;
             }
-            return fullText;
         }
 
         public override string ToString() => Name;
@@ -72,6 +84,14 @@ namespace HtmlScrapper.Common
                 current.Children.ForEach(t => queue.Enqueue(t));
                 yield return current;
             }
+        }
+
+        public static IEnumerable<TagNode> TopDown(TagNode arg)
+        {
+            yield return arg;
+            foreach (var child in arg.Children)
+                foreach (var item in TopDown(child))
+                    yield return item;
         }
 
         public IEnumerable<TagNode> SearchTags

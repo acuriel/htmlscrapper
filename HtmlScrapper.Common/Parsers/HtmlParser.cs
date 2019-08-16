@@ -81,8 +81,9 @@ namespace HtmlScrapper.Common.Parsers
                text = ForceTagClose();
             else
                 text = GetWhile(c => c != TAG_START_SYMBOL);
-            ;
-            tag.Children.Add(new TextNode(tag, text));
+            text = text.Trim(DUMMY_SYMBOLS.ToCharArray());
+            if(text.Length > 0)
+                tag.Children.Add(new TextNode(tag, text.Trim()));
         }
 
         private string ForceTagClose()
