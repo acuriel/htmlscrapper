@@ -8,8 +8,14 @@ namespace HtmlScrapper.Common.Parsers
     public class HtmlParser : IParser<TagNode>
     {
         private static HtmlParser instance = new HtmlParser();
+
+        /// <summary>
+        /// Singleton method
+        /// </summary>
+        /// <returns>The parser instance</returns>
         public static HtmlParser GetInstance() => instance;
 
+        //Basic symbols
         private const char TAG_START_SYMBOL = '<';
         private const char TAG_END_SYMBOL = '>';
         private const char TAG_CLOSE_SYMBOL = '/';
@@ -19,9 +25,18 @@ namespace HtmlScrapper.Common.Parsers
 
         private const string DUMMY_SYMBOLS = "\n\r\t ";
 
-        private void MoveUntilNextSymbol(string ignoreSymbols = DUMMY_SYMBOLS)
-            => GetWhile(c => ignoreSymbols.Contains(c));
+        /// <summary>
+        /// Move the cursor until the next ocurrence of a given symbols
+        /// </summary>
+        /// <param name="symbols">The given symbols</param>
+        private void MoveUntilNextSymbol(string symbols = DUMMY_SYMBOLS)
+            => GetWhile(c => symbols.Contains(c));
 
+        /// <summary>
+        /// Get the content while a condition is happening
+        /// </summary>
+        /// <param name="condition">The condition to be checked</param>
+        /// <returns></returns>
         private string GetWhile(Func<char, bool> condition)
         {
             string result = "";
@@ -34,6 +49,12 @@ namespace HtmlScrapper.Common.Parsers
         private string content;
         Stack<TagNode> stack;
         TagNode rootNode;
+
+        /// <summary>
+        /// Parse the given content and return the root node
+        /// </summary>
+        /// <param name="text">The content to be parsed</param>
+        /// <returns></returns>
         public TagNode Parse(string text)
         {
             pos = 0;
@@ -43,27 +64,31 @@ namespace HtmlScrapper.Common.Parsers
 
             while (pos < content.Length) //execute until end of content
             {
-                MoveUntilNextSymbol();
+                MoveUntilNextSymbol(); //ignore dummy symbols
                 char currentChar = content[pos];
-                if (content[pos] == TAG_START_SYMBOL)
+                if (content[pos] == TAG_START_SYMBOL) //a tag is starting
                 {
-                    if (content[pos + 1] == '!')
+                    if (content[pos + 1] == '!')//a comment or the doctype
                     {
-                        if (content[pos + 2] == '-')
+                        if (content[pos + 2] == '-') //ignore if comment
                             JumpComment();
                         else
-                             docType = GetDocType();
+                             docType = GetDocType(); //extract doctype
                     }
                     else
-                        ParseTag();
+                        ParseTag(); //parse current tag
                 }
                 else
-                    AddText();
+                    AddText(); //if it'sn not a tag, it's flat text
             }
 
             return rootNode;
         }
 
+        /// <summary>
+        /// Parse the DocType
+        /// </summary>
+        /// <returns>The extracted doctype</returns>
         private string GetDocType()
         {
             GetWhile(c => c != ATTR_SEP_SYMBOL);
@@ -73,19 +98,27 @@ namespace HtmlScrapper.Common.Parsers
             return docType;
         }
 
+        /// <summary>
+        /// Extract text and ignore styles and scripts
+        /// </summary>
         private void AddText()
         {
             TagNode tag = stack.Peek();
             string text;
             if (tag.Name == "script" || tag.Name == "style")
-               text = ForceTagClose();
+               text = ForceTagClose(); //ignore scripts and styles
             else
                 text = GetWhile(c => c != TAG_START_SYMBOL);
+
             text = text.Trim(DUMMY_SYMBOLS.ToCharArray());
             if(text.Length > 0)
                 tag.Children.Add(new TextNode(tag, text.Trim()));
         }
 
+        /// <summary>
+        /// Set the cursor at the endo of the current tag
+        /// </summary>
+        /// <returns>The ignored text</returns>
         private string ForceTagClose()
         {
             string text = GetWhile(c => c!=TAG_START_SYMBOL);
@@ -97,6 +130,9 @@ namespace HtmlScrapper.Common.Parsers
             return text;
         }
 
+        /// <summary>
+        /// Ignores a comment
+        /// </summary>
         private void JumpComment()
         {
             while (!(content[pos] == TAG_END_SYMBOL && content[pos - 1] == '-' && content[pos - 2] == '-'))
@@ -104,16 +140,21 @@ namespace HtmlScrapper.Common.Parsers
             pos++;
         }
 
+        /// <summary>
+        /// Parses the curent tag
+        /// </summary>
         private void ParseTag()
         {
             bool closeTag = false;
 
+            //if it's a self closed tag </aaa>
             if (closeTag = content[++pos] == TAG_CLOSE_SYMBOL)
                 pos++;
 
             //get tag name
             string name = GetWhile(c => c != ATTR_SEP_SYMBOL && c!=TAG_END_SYMBOL);
 
+            //finish closing the tag or opened
             if (closeTag)
             {
                 CloseTag(name);
@@ -150,9 +191,15 @@ namespace HtmlScrapper.Common.Parsers
             }
         }
 
+        /// <summary>
+        /// Closes the current tag
+        /// </summary>
+        /// <param name="name"></param>
         private void CloseTag(string name)
         {
             TagNode cursor = stack.Pop();
+            //close all the tags in the stack until find the correct one
+            //fix all the sub-tree (non-closed tags)
             while (cursor.Name != name)
             {
                 cursor.Parent.Children.AddRange(cursor.Children);
@@ -162,6 +209,10 @@ namespace HtmlScrapper.Common.Parsers
             }
         }
 
+        /// <summary>
+        /// Extract the attributes from a given tag
+        /// </summary>
+        /// <param name="tag">The tag</param>
         private void GetAttributes(TagNode tag)
         {
             bool tagEnd = false;
@@ -183,7 +234,7 @@ namespace HtmlScrapper.Common.Parsers
                     char openingAttrSymbol = content[pos++];
                     string attrValue = GetWhile(c => c != openingAttrSymbol);
 
-                    tag.Attributes.Add(new Attribute(attrName, attrValue));
+                    tag.Attributes.Add(attrName, attrValue);
                     pos++;
                     //FIX: empty attr like 'checked'
                 }
