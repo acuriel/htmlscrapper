@@ -71,7 +71,7 @@ namespace HtmlScrapper.Common
         /// <summary>
         /// All the decendents returned using a BFS search
         /// </summary>
-        public IEnumerable<TagNode> Decendents => Breadth(this);
+        public IEnumerable<TagNode> Descendants => Breadth(this);
         /// <summary>
         /// All the ancestos from the current element to the root (BottomUp)
         /// </summary>
@@ -195,7 +195,7 @@ namespace HtmlScrapper.Common
         public IEnumerable<TagNode> Find
             (Func<TagNode, IEnumerable<TagNode>> iter, Func<TagNode, bool> filter)
             => iter(this).Skip(1).Where(filter);
-        public IEnumerable<TagNode> FindParents(Func<TagNode, bool> filter) => Find(BottomUp, filter);
+        public IEnumerable<TagNode> FindAncestors(Func<TagNode, bool> filter) => Find(BottomUp, filter);
 
     }
 
