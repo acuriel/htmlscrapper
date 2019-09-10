@@ -30,8 +30,8 @@ namespace HtmlScrapper.Common
         public TagNode PrevSibling => PrevFullSiblings.First();
         public IEnumerable<TagNode> NextFullSiblings => Siblings.SkipWhile(t => !t.Equals(this)).Skip(1);
         public IEnumerable<TagNode> PrevFullSiblings => Siblings.Reverse().SkipWhile(t => !t.Equals(this)).Skip(1);
-        public IEnumerable<TagNode> NextFullElements => Siblings.SkipWhile(t => !t.Equals(this)).Skip(1);
-        public IEnumerable<TagNode> PrevFullElements => Siblings.SkipWhile(t => !t.Equals(this)).Skip(1);
+        public IEnumerable<TagNode> Decendents => Wide(this);
+        public IEnumerable<TagNode> Ancestors => BottomUp(this);
 
 
 
@@ -72,7 +72,7 @@ namespace HtmlScrapper.Common
         public override string ToString() => Name;
 
         public TagNode GetTag(string tag) 
-            => FindAll(
+            => Find(
                 Wide, 
                 t => t.Name.Equals(tag, StringComparison.CurrentCultureIgnoreCase)
                 ).First();
@@ -96,20 +96,29 @@ namespace HtmlScrapper.Common
                 foreach (var item in TopDown(child))
                     yield return item;
         }
+        public static IEnumerable<TagNode> BottomUp(TagNode arg)
+        {
+            while(arg.Parent != null)
+            {
+                arg = arg.Parent;
+                yield return arg;
+            }
+        }
         public IEnumerable<TagNode> FindAll() => FindAll(_ => true);
-        public IEnumerable<TagNode> FindAll(string tagName) 
-            => FindAll(Wide, t => t.Name.Equals(tagName, StringComparison.OrdinalIgnoreCase));
-        public IEnumerable<TagNode> FindAll(string[] tagsNames) 
-            => FindAll(Wide, t => tagsNames.Contains(t.Name));
-        public IEnumerable<TagNode> FindAll(Func<TagNode, bool> filter) => FindAll(Wide, filter);
-        public IEnumerable<TagNode> FindAll
+
+        public IEnumerable<TagNode> FindAll(Func<TagNode, bool> filter) => Find(Wide, filter);
+        public IEnumerable<TagNode> Find
             (Func<TagNode, IEnumerable<TagNode>> iter, Func<TagNode, bool> filter)
             => iter(this).Skip(1).Where(filter);
-        public IEnumerable<TagNode> FindParents(Func<TagNode, bool> filter) => FindAll(Wide, filter);
+        public IEnumerable<TagNode> FindParents(Func<TagNode, bool> filter) => Find(BottomUp, filter);
 
     }
     public static class TagExtensions
     {
+        public static IEnumerable<TagNode> WithTag(this IEnumerable<TagNode> obj, string tagName)
+            => obj.Where(t => t.Name.Equals(tagName, StringComparison.OrdinalIgnoreCase));
+        public static IEnumerable<TagNode> WithTag(this IEnumerable<TagNode> obj, params string[] tagsNames)
+            => obj.Where(t => tagsNames.Contains(t.Name));
         public static IEnumerable<TagNode> WithAttribute(this IEnumerable<TagNode> obj, string attrName)
             => obj.Where(t => t.Attributes.ContainsKey(attrName));
         public static IEnumerable<TagNode> WithAttribute(this IEnumerable<TagNode> obj, string attrName, string attrValue)
