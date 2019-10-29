@@ -1,6 +1,6 @@
 # HTML Scrapper for .NET
 
-**NuGet: ** [https://www.nuget.org/packages/WebTools.HtmlScrapper/](https://www.nuget.org/packages/WebTools.HtmlScrapper/)
+**NuGet:** [https://www.nuget.org/packages/WebTools.HtmlScrapper/](https://www.nuget.org/packages/WebTools.HtmlScrapper/)
 
 ## Introduction
 
