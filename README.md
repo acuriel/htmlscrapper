@@ -1,5 +1,7 @@
 # HTML Scrapper for .NET
 
+**NuGet: ** [https://www.nuget.org/packages/WebTools.HtmlScrapper/](https://www.nuget.org/packages/WebTools.HtmlScrapper/)
+
 ## Introduction
 
 There are incredible options for web scrapping like [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/) in python, but I needed an easy to use and understand scrapper for .Net family. So, I started this simple scrapper, extensible and easy to understand.
